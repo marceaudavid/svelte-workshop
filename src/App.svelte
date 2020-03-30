@@ -1,33 +1,34 @@
 <script>
-  export let name;
+  import Signin from "./pages/Signin.svelte"
+  import Signup from "./pages/Signup.svelte"
+  import Chat from "./pages/Chat.svelte"
+
+  let signedIn = false
+  let url = `https://backend.cleverapps.io`
+  let ws = new WebSocket(`ws://backend.cleverapps.io`);
+
+  function onSignIn(event) {
+    signedIn = event.detail
+  }
 </script>
 
 <main>
-  <h1>Hello {name}!</h1>
-  <p>
-    Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte
-    apps.
-  </p>
+  {#if !signedIn}
+  <Signup url={url} />
+  <Signin url={url} ws={ws} on:signed={onSignIn}/>
+  {/if}
+  {#if signedIn}
+  <Chat ws={ws}/>
+  {/if}
 </main>
 
 <style>
   main {
-    text-align: center;
-    padding: 1em;
-    max-width: 240px;
-    margin: 0 auto;
-  }
-
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-size: 4em;
-    font-weight: 100;
-  }
-
-  @media (min-width: 640px) {
-    main {
-      max-width: none;
-    }
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
 </style>
