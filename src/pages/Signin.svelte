@@ -1,6 +1,7 @@
 <script>
   import Alert from "../components/Alert.svelte"
   import { createEventDispatcher } from 'svelte';
+  import { onMount } from 'svelte';
 
   export let url;
   export let ws;
@@ -9,6 +10,21 @@
   let alert = {toggle: false, content: "", type: ""}
 
   const dispatch = createEventDispatcher();
+
+  onMount(async () => {
+    let blob = await fetch(`${url}/status`, {
+      credentials: 'include'
+    })
+    if (blob.status === 200) {
+      let res = await blob.text();
+      if (res !== "Visiteur") {
+        await getTicket();
+      }
+    } else {
+      let err = await blob.text();
+      alert = {toggle: true, content: err, type: "error"}      
+    }
+  })
 
   async function onSignIn() {
       let login = await fetch(`${url}/login`, {
@@ -38,8 +54,8 @@
       if (blob.status === 200) {
         let ticket = await blob.text();
         ws.send(ticket);
-        dispatch('signed', true);
-        alert = {toggle: true, content: res, type: "success"}
+        dispatch('login', true);
+        alert = {toggle: true, content: "Ticket received", type: "success"}
       } else {
         let err = await blob.text();
         alert = {toggle: true, content: err, type: "error"}

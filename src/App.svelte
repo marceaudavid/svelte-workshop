@@ -7,7 +7,7 @@
   let url = `https://backend.cleverapps.io`
   let ws = new WebSocket(`ws://backend.cleverapps.io`);
 
-  function onSignIn(event) {
+  function onSignChange(event) {
     signedIn = event.detail
   }
 </script>
@@ -15,10 +15,10 @@
 <main>
   {#if !signedIn}
   <Signup url={url} />
-  <Signin url={url} ws={ws} on:signed={onSignIn}/>
+  <Signin url={url} ws={ws} on:login={onSignChange}/>
   {/if}
   {#if signedIn}
-  <Chat ws={ws}/>
+  <Chat url={url} ws={ws} on:logout={onSignChange}/>
   {/if}
 </main>
 
