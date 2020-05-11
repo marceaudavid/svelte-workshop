@@ -5,7 +5,6 @@
   import { onMount } from 'svelte';
   import api from '../api.js';
 
-
   let ws;
   let message;
   let messages = [];

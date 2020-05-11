@@ -1,7 +1,7 @@
 import Signin from './pages/Signin.svelte';
 import SignUp from './pages/SignUp.svelte';
 import Chat from './pages/Chat.svelte';
-import { writable } from 'svelte/store';
+import { route } from './store/store.js';
 
 const router = {
   '/': Signin,
@@ -13,7 +13,5 @@ export function navigateTo(path, data) {
   route.set(path);
   window.history.pushState({ path, data }, '', window.location.origin + path);
 }
-
-export const route = writable('/signin');
 
 export default router;

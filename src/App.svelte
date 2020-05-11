@@ -2,20 +2,21 @@
   import SignIn from './pages/SignIn.svelte';
   import SignUp from './pages/SignUp.svelte';
   import Chat from './pages/Chat.svelte';
-  import router, { route } from './router.js';
-  import { onMount } from 'svelte';
+  import router from './router.js';
+  import { route } from './store/store.js';
+  import { onDestroy } from 'svelte';
 
-  onMount(() => {
-    route.set(window.location.pathname);
+  let component;
+
+  const unsubscribe = route.subscribe((value) => {
+    component = router[$route];
   });
 
-  function onSignChange(event) {
-    signedIn = event.detail;
-  }
+  onDestroy(unsubscribe);
 </script>
 
 <main>
-  <svelte:component this="{router[$route]}" />
+  <svelte:component this="{component}" />
 </main>
 
 <style>
