@@ -1,8 +1,10 @@
 <script>
+  import { fade, fly } from 'svelte/transition';
   import Alert from '../components/Alert.svelte';
   import { navigateTo } from '../router.js';
   import { onMount } from 'svelte';
   import api from '../api.js';
+
 
   let ws;
   let message;
@@ -10,7 +12,7 @@
   let markers = {};
   let alert = { toggle: false, content: '', type: '' };
 
-  onMount(async () => {    
+  onMount(async () => {
     let blob = await api.getStatus()
     if (blob.status === 200) {
       let res = await blob.text();
@@ -18,11 +20,13 @@
         let blob = await api.getTicket();
         if (blob.status === 200) {
           let ticket = await blob.text();
-          alert = {toggle: true, content: "Ticket received", type: "success"}
+          alert = { toggle: true, content: "Ticket received", type: "success" }
+          setTimeout(() => alert = { toggle: false, content: '', type: '' }, 5000)
           ws = await api.startWebsocket(ticket, onMessage, onClose);
         } else {
           let err = await blob.text();
-          alert = {toggle: true, content: err, type: "error"}
+          alert = { toggle: true, content: err, type: "error" }
+          setTimeout(() => alert = { toggle: false, content: '', type: '' }, 5000)
           navigateTo("/signin")
         }
       }
@@ -60,7 +64,8 @@
   }
 
   function onClose() {
-    alert = {toggle: true, content: "Connection closed", type: "error"}
+    alert = { toggle: true, content: "Connection closed", type: "error" }
+    setTimeout(() => onLogout(), 5000)
   }
 
   function onSendMsg() {
@@ -121,23 +126,25 @@
   }
 </style>
 
-<button class="logout" on:click|preventDefault="{onLogout}">Logout</button>
-<div class="chat">
-  <Alert {...alert}/>
-  <h2>GoChat</h2>
-  <form id="chat-form">
-    <input bind:value="{message}" />
-    <button on:click|preventDefault="{onSendMsg}">Submit</button>
-  </form>
-  <div id="map" on:click|preventDefault="{onSendPosition}">
-    {#each Object.entries(markers) as [user, position]}
+<div transition:fade="{{delay: 250, duration: 300}}">
+  <button class="logout" on:click|preventDefault="{onLogout}">Logout</button>
+  <div class="chat">
+    <Alert {...alert} />
+    <h2>GoChat</h2>
+    <form id="chat-form">
+      <input bind:value="{message}" />
+      <button on:click|preventDefault="{onSendMsg}">Submit</button>
+    </form>
+    <div id="map" on:click|preventDefault="{onSendPosition}">
+      {#each Object.entries(markers) as [user, position]}
     <div class="marker" style="{`top:${position.y}px;left:${position.x}px`}"></div>
     <div class="legend" style="{`top:${position.y+15}px;left:${position.x+15}px`}">{user}</div>
     {/each}
   </div>
   <ul class="messages">
     {#each messages as item}
-    <li>{item}</li>
+    <li transition:fly="{{delay: 0, duration: 300, x: 100, y: 0, opacity: 0.5}}">{item}</li>
     {/each}
   </ul>
+</div>
 </div>
