@@ -1,13 +1,67 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
+  import Alert from '../components/Alert.svelte';
+  import { navigateTo } from '../router.js';
+  import { onMount } from 'svelte';
+  import api from '../api.js';
 
-  export let ws;
-  export let url;
+  let ws;
   let message;
   let messages = [];
   let markers = {};
+  let alert = { toggle: false, content: '', type: '' };
 
-  const dispatch = createEventDispatcher();
+  onMount(async () => {    
+    let blob = await api.getStatus()
+    if (blob.status === 200) {
+      let res = await blob.text();
+      if (res !== "Visiteur") {
+        let blob = await api.getTicket();
+        if (blob.status === 200) {
+          let ticket = await blob.text();
+          alert = {toggle: true, content: "Ticket received", type: "success"}
+          ws = await api.startWebsocket(ticket, onMessage, onClose);
+        } else {
+          let err = await blob.text();
+          alert = {toggle: true, content: err, type: "error"}
+          navigateTo("/signin")
+        }
+      }
+    } else {
+      navigateTo("/signin")
+    }
+  });
+
+  function onMessage(msg) {
+    let message = msg.data.split(':').map((el) => el.trim());
+    let user = message[0];
+    let type = message[1];
+    if (type === 'msg') {
+      messages = [...messages, `${message[0]} : ${message[2]}`];
+    } else if (type === 'mov') {
+      let coords = message[2].split(',');
+      let x = Math.abs(parseInt(coords[0]));
+      let y = Math.abs(parseInt(coords[1]));
+      if (x >= 500) {
+        x = 500;
+      }
+      if (y >= 500) {
+        y = 500;
+      }
+      markers = {
+        ...markers,
+        [user]: {
+          x,
+          y,
+        },
+      };
+    } else {
+      messages = [...messages, msg.data];
+    }
+  }
+
+  function onClose() {
+    alert = {toggle: true, content: "Connection closed", type: "error"}
+  }
 
   function onSendMsg() {
     ws.send(`msg:${message}`);
@@ -19,39 +73,10 @@
     ws.send(`mov:${event.clientX - map.x},${event.clientY - map.y}`);
   }
 
-  function onLogout() {
-    fetch(`${url}/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
-    dispatch('logout', false);
+  async function onLogout() {
+    await api.logout();
+    navigateTo('/');
   }
-
-  ws.addEventListener('message', (msg) => {
-    let message = msg.data.split(':').map((el) => el.trim());
-    let user = message[0];
-    let type = message[1];
-    if (type === 'msg') {
-      messages = [...messages, `${message[0]} : ${message[2]}`];
-    } else if (type === 'mov') {
-      let coords = message[2].split(',');
-      if (coords[1] >= 500) {
-        coords[1] = 500;
-      }
-      if (coords[0] >= 500) {
-        coords[0] = 500;
-      }
-      markers = {
-        ...markers,
-        [user]: {
-          x: Math.abs(parseInt(coords[0])),
-          y: Math.abs(parseInt(coords[1])),
-        },
-      };
-    } else {
-      messages = [...messages, msg.data];
-    }
-  });
 </script>
 
 <style>
@@ -84,6 +109,11 @@
     transition: top 1s, left 1s;
   }
 
+  .legend {
+    position: absolute;
+    transition: top 1s, left 1s;
+  }
+
   .messages {
     height: 200px;
     width: 500px;
@@ -93,14 +123,16 @@
 
 <button class="logout" on:click|preventDefault="{onLogout}">Logout</button>
 <div class="chat">
+  <Alert {...alert}/>
   <h2>GoChat</h2>
   <form id="chat-form">
     <input bind:value="{message}" />
     <button on:click|preventDefault="{onSendMsg}">Submit</button>
   </form>
   <div id="map" on:click|preventDefault="{onSendPosition}">
-    {#each Object.entries(markers) as [marker, pos]}
-    <div class="marker" style={`top:${pos.y}px;left:${pos.x}px`}>{marker}</div>
+    {#each Object.entries(markers) as [user, position]}
+    <div class="marker" style="{`top:${position.y}px;left:${position.x}px`}"></div>
+    <div class="legend" style="{`top:${position.y+15}px;left:${position.x+15}px`}">{user}</div>
     {/each}
   </div>
   <ul class="messages">

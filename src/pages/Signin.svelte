@@ -1,63 +1,32 @@
 <script>
   import Alert from "../components/Alert.svelte"
-  import { createEventDispatcher } from 'svelte';
   import { onMount } from 'svelte';
+  import { navigateTo } from "../router.js"
+  import api from "../api.js"
 
-  export let url;
-  export let ws;
   let username;
   let password;
   let alert = {toggle: false, content: "", type: ""}
 
-  const dispatch = createEventDispatcher();
-
   onMount(async () => {
-    let blob = await fetch(`${url}/status`, {
-      credentials: 'include'
-    })
+    let blob = await api.getStatus()
     if (blob.status === 200) {
       let res = await blob.text();
       if (res !== "Visiteur") {
-        await getTicket();
+        navigateTo("/chat")
       }
     } else {
       let err = await blob.text();
-      alert = {toggle: true, content: err, type: "error"}      
     }
   })
 
-  async function onSignIn() {
-      let login = await fetch(`${url}/login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username,
-          password
-        })
-      });
+  async function onSubmit() {
+      let login = await api.signIn(username, password)
       if (login.status === 200) {
         let res = await login.text();
-        await getTicket();
+        navigateTo("/chat")
       } else {
         let err = await login.text();
-        alert = {toggle: true, content: err, type: "error"}
-      }
-  }
-
-  async function getTicket() {
-      let blob = await fetch(`${url}/wsTicket`, {
-        credentials: 'include'
-      });
-      if (blob.status === 200) {
-        let ticket = await blob.text();
-        ws.send(ticket);
-        dispatch('login', true);
-        alert = {toggle: true, content: "Ticket received", type: "success"}
-      } else {
-        let err = await blob.text();
         alert = {toggle: true, content: err, type: "error"}
       }
   }
@@ -76,5 +45,5 @@
   <Alert {...alert}/>
   <input bind:value="{username}" type="text" placeholder="username" />
   <input bind:value="{password}" type="password" placeholder="password" />
-  <button on:click|preventDefault="{onSignIn}">Submit</button>
+  <button on:click|preventDefault="{onSubmit}">Submit</button>
 </form>

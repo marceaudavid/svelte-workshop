@@ -1,25 +1,21 @@
 <script>
-  import Signin from "./pages/Signin.svelte"
-  import Signup from "./pages/Signup.svelte"
-  import Chat from "./pages/Chat.svelte"
+  import SignIn from './pages/SignIn.svelte';
+  import SignUp from './pages/SignUp.svelte';
+  import Chat from './pages/Chat.svelte';
+  import router, { route } from './router.js';
+  import { onMount } from 'svelte';
 
-  let signedIn = false
-  let url = `https://backend.cleverapps.io`
-  let ws = new WebSocket(`ws://backend.cleverapps.io`);
+  onMount(() => {
+    route.set(window.location.pathname);
+  });
 
   function onSignChange(event) {
-    signedIn = event.detail
+    signedIn = event.detail;
   }
 </script>
 
 <main>
-  {#if !signedIn}
-  <Signup url={url} />
-  <Signin url={url} ws={ws} on:login={onSignChange}/>
-  {/if}
-  {#if signedIn}
-  <Chat url={url} ws={ws} on:logout={onSignChange}/>
-  {/if}
+  <svelte:component this="{router[$route]}" />
 </main>
 
 <style>
